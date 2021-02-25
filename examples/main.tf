@@ -8,3 +8,7 @@ terraform {
 }
 
 provider "oncall" {}
+
+resource "oncall_team" "t" {
+  name = "terraform-test-team"
+}

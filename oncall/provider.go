@@ -3,8 +3,6 @@ package oncall
 import (
 	"context"
 	"fmt"
-	"log"
-	"strings"
 
 	"github.com/bushelpowered/oncall-client-go/oncall"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -17,39 +15,46 @@ var authMethods = []oncall.AuthMethod{
 	oncall.AuthMethodUser,
 }
 
+const (
+	providerFieldEndpoint = "endpoint"
+	providerFieldUsername = "username"
+	providerFieldPassword = "password"
+	providerFieldAuthType = "auth_type"
+)
+
 // Provider - returns the oncall provider
 func Provider() *schema.Provider {
 	return &schema.Provider{
 		Schema: map[string]*schema.Schema{
-			"endpoint": &schema.Schema{
+			providerFieldEndpoint: {
 				Type:        schema.TypeString,
 				Required:    true,
 				Description: "Oncall endpoint to connect to, everything before '/api/v0'",
-				DefaultFunc: schema.EnvDefaultFunc("ONCALL_ENDPOINT", nil),
+				DefaultFunc: schema.EnvDefaultFunc("ONCALL_ENDPOINT", ""),
 			},
-			"username": &schema.Schema{
+			providerFieldUsername: {
 				Type:        schema.TypeString,
 				Optional:    true,
 				Description: "Username to use when connecting to oncall",
-				DefaultFunc: schema.EnvDefaultFunc("ONCALL_USERNAME", nil),
+				DefaultFunc: schema.EnvDefaultFunc("ONCALL_USERNAME", ""),
 			},
-			"password": &schema.Schema{
+			providerFieldPassword: {
 				Type:        schema.TypeString,
 				Optional:    true,
 				Sensitive:   true,
 				Description: "Password to use when connecting to oncall",
-				DefaultFunc: schema.EnvDefaultFunc("ONCALL_PASSWORD", nil),
+				DefaultFunc: schema.EnvDefaultFunc("ONCALL_PASSWORD", ""),
 			},
-			"auth_type": &schema.Schema{
+			providerFieldAuthType: {
 				Type:        schema.TypeString,
 				Default:     string(oncall.AuthMethodUser),
 				Description: fmt.Sprintf("Auth method for your username/password; one of: %v", authMethods),
 				Optional:    true,
-				DefaultFunc: schema.EnvDefaultFunc("ONCALL_AUTH_TYPE", nil),
+				DefaultFunc: schema.EnvDefaultFunc("ONCALL_AUTH_TYPE", ""),
 			},
 		},
 		ResourcesMap: map[string]*schema.Resource{
-			//	"hashicups_order": resourceOrder(),
+			"oncall_team": resourceTeam(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
 			//	"hashicups_coffees":     dataSourceCoffees(),
@@ -61,29 +66,26 @@ func Provider() *schema.Provider {
 }
 
 func providerConfigure(ctx context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
-	endpoint := d.Get("endpoint").(string)
-	username := d.Get("username").(string)
-	password := d.Get("password").(string)
-	requestedAuthMethod := d.Get("auth_method").(oncall.AuthMethod)
+	endpoint := d.Get(providerFieldEndpoint).(string)
+	username := d.Get(providerFieldUsername).(string)
+	password := d.Get(providerFieldPassword).(string)
+	requestedAuthMethod := d.Get(providerFieldAuthType).(string)
 
 	// Warning or errors can be collected in a slice type
 	var diags diag.Diagnostics
 
 	var authMethod oncall.AuthMethod
 	for _, m := range authMethods {
-		if m == requestedAuthMethod {
+		if m == oncall.AuthMethod(requestedAuthMethod) {
 			authMethod = m
 			break
 		}
 	}
 	if authMethod == "" {
-		diags = append(diags, diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  "Invalid auth_method specified",
-			Detail:   fmt.Sprintf("Auth method of %s is not a valid auth method %v", requestedAuthMethod, authMethods),
-		})
-		return nil, diags
+		return nil, diag.FromErr(fmt.Errorf("%s of %s is not valid, must be one of: %v", providerFieldAuthType, requestedAuthMethod, authMethods))
 	}
+
+	traceLog("Going to create oncall client for %s with auth method %s, username %s", endpoint, authMethod, username)
 
 	oncallClient, err := oncall.New(nil, oncall.Config{
 		Endpoint:   endpoint,
@@ -92,26 +94,8 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData) (interface{}
 		AuthMethod: authMethod,
 	})
 	if err != nil {
-		diags = append(diags, diag.Diagnostic{
-			Severity: diag.Error,
-			Summary:  "Unable to create oncall client",
-			Detail:   errors.Wrap(err, "Creating oncall clietn").Error(),
-		})
-		return nil, diags
+		return nil, diag.FromErr(errors.Wrap(err, "Initializing oncall client"))
 	}
 
 	return oncallClient, diags
 }
-
-func leveledLog(level string) func(format string, v ...interface{}) {
-	prefix := fmt.Sprintf("[%s] ", strings.ToUpper(level))
-	return func(format string, v ...interface{}) {
-		log.Printf(prefix+format, v...)
-	}
-}
-
-var traceLog = leveledLog("trace")
-var debugLog = leveledLog("debug")
-var infoLog = leveledLog("info")
-var warnLog = leveledLog("warn")
-var errorLog = leveledLog("error")
