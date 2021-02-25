@@ -1,6 +1,8 @@
 .DS_Store
-terraform-provider-hashicups
+terraform-provider-oncall
 bin
+
+.terraform.lock.hcl
 
 # Created by https://www.toptal.com/developers/gitignore/api/go,terraform
 # Edit at https://www.toptal.com/developers/gitignore?templates=go,terraform

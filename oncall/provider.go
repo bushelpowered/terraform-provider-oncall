@@ -43,8 +43,8 @@ func Provider() *schema.Provider {
 			"auth_type": &schema.Schema{
 				Type:        schema.TypeString,
 				Default:     string(oncall.AuthMethodUser),
-				Description: fmt.Sprintf("Auth method your username/password are for, one of: %v", authMethods),
-				Required:    true,
+				Description: fmt.Sprintf("Auth method for your username/password; one of: %v", authMethods),
+				Optional:    true,
 				DefaultFunc: schema.EnvDefaultFunc("ONCALL_AUTH_TYPE", nil),
 			},
 		},
