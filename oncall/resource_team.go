@@ -25,6 +25,9 @@ func resourceTeam() *schema.Resource {
 		ReadContext:   resourceTeamRead,
 		UpdateContext: resourceTeamUpdate,
 		DeleteContext: resourceTeamDelete,
+		Importer: &schema.ResourceImporter{
+			StateContext: resourceTeamImport,
+		},
 		Schema: map[string]*schema.Schema{
 			teamFieldName: &schema.Schema{
 				Type:        schema.TypeString,
@@ -62,6 +65,17 @@ func resourceTeam() *schema.Resource {
 			},
 		},
 	}
+}
+
+func resourceTeamImport(ctx context.Context, d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
+	traceLog("Going to import team %s", d.Id())
+	var err error
+
+	readErr := resourceTeamRead(ctx, d, m)
+	if len(readErr) > 0 {
+		err = errors.New(readErr[0].Summary)
+	}
+	return []*schema.ResourceData{d}, errors.Wrap(err, "Reading team for import")
 }
 
 func resourceTeamCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
