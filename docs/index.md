@@ -19,7 +19,7 @@ Do not keep your authentication password in HCL for production environments, use
 
 ```terraform
 // API Client
-provider "hashicups" {
+provider "oncall" {
     auth_type = "api"
     endpoint = "https://example.com/oncall/"
     username = "terraform_user"
@@ -27,7 +27,7 @@ provider "hashicups" {
 }
 
 // User Client
-provider "hashicups" {
+provider "oncall" {
     auth_type = "user"
     endpoint = "https://example.com/oncall/"
     username = "firstname.lastname" // If you are using ldap to login, this is the ldap username
