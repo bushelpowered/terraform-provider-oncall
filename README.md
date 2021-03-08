@@ -3,7 +3,7 @@
 Run the following command to build the provider
 
 ```shell
-go build -o terraform-provider-hashicups
+make build
 ```
 
 ## Test sample configuration
@@ -17,5 +17,5 @@ make install
 Then, run the following command to initialize the workspace and apply the sample configuration.
 
 ```shell
-terraform init && terraform apply
+cd examples && terraform init && terraform apply
 ```

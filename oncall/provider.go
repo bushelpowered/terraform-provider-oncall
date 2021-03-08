@@ -54,7 +54,10 @@ func Provider() *schema.Provider {
 			},
 		},
 		ResourcesMap: map[string]*schema.Resource{
-			"oncall_team": resourceTeam(),
+			"oncall_team":              resourceTeam(),
+			"oncall_roster":            resourceRoster(),
+			"oncall_basic_schedule":    resourceBasicSchedule(),
+			"oncall_advanced_schedule": resourceAdvancedSchedule(),
 		},
 		DataSourcesMap: map[string]*schema.Resource{
 			//	"hashicups_coffees":     dataSourceCoffees(),

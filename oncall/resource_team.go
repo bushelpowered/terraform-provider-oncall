@@ -2,6 +2,7 @@ package oncall
 
 import (
 	"context"
+	"strings"
 
 	"github.com/bushelpowered/oncall-client-go/oncall"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -15,6 +16,7 @@ const (
 	teamFieldEmail              = "email"
 	teamFieldSlackChannel       = "slack_channel"
 	teamFieldIrisPlan           = "iris_plan"
+	teamFieldAdmins             = "admins"
 )
 
 func resourceTeam() *schema.Resource {
@@ -50,6 +52,14 @@ func resourceTeam() *schema.Resource {
 				Description: "Default iris plan for this team. Allows paging from oncall",
 				Optional:    true,
 			},
+			teamFieldAdmins: &schema.Schema{
+				Type:        schema.TypeSet,
+				Description: "Authoritative list of usernames of who should admin the team",
+				Required:    true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
 		},
 	}
 }
@@ -66,11 +76,20 @@ func resourceTeamCreate(ctx context.Context, d *schema.ResourceData, m interface
 	traceLog("Going to create team: %+v", teamConfig)
 	t, err := c.CreateTeam(teamConfig)
 	if err != nil {
-		return diag.FromErr(errors.Wrap(err, "Creating oncall team"))
+		if strings.Contains(err.Error(), "(422)") {
+			return diagFromErrf(err, "Team already exists, please import using id %q", teamConfig.Name)
+		}
+		return diagFromErrf(err, "Creating oncall team")
 	}
 
 	traceLog("Setting team resource id to %q", t.Name)
 	d.SetId(t.Name)
+
+	admins := getResourceStringSet(d, teamFieldAdmins)
+	err = c.SetTeamAdmins(t.Name, admins)
+	if err != nil {
+		return diagFromErrf(err, "Setting team admins to %v", admins)
+	}
 
 	resourceTeamRead(ctx, d, m)
 	return diags
@@ -122,6 +141,12 @@ func resourceTeamRead(ctx context.Context, d *schema.ResourceData, m interface{}
 	d.Set(teamFieldSlackChannel, team.SlackChannel)
 	d.Set(teamFieldIrisPlan, team.IrisPlan)
 	d.Set(teamFieldSchedulingTimezone, team.SchedulingTimezone)
+
+	admins := make([]string, 0, len(team.Admins))
+	for _, a := range team.Admins {
+		admins = append(admins, a.Name)
+	}
+	setResourceStringSet(d, teamFieldAdmins, admins)
 
 	return diags
 }
