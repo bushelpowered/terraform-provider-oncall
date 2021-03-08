@@ -29,7 +29,7 @@ func Provider() *schema.Provider {
 			providerFieldEndpoint: {
 				Type:        schema.TypeString,
 				Required:    true,
-				Description: "Oncall endpoint to connect to, everything before '/api/v0'",
+				Description: "Oncall endpoint to connect to, everything before '/api/v0' in the URL",
 				DefaultFunc: schema.EnvDefaultFunc("ONCALL_ENDPOINT", ""),
 			},
 			providerFieldUsername: {
