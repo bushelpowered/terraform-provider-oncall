@@ -183,6 +183,12 @@ func resourceTeamUpdate(ctx context.Context, d *schema.ResourceData, m interface
 	traceLog("Setting team resource id to %q", t.Name)
 	d.SetId(t.Name)
 
+	admins := getResourceStringSet(d, teamFieldAdmins)
+	err = c.SetTeamAdmins(t.Name, admins)
+	if err != nil {
+		return diagFromErrf(err, "Setting team admins to %v", admins)
+	}
+
 	return resourceTeamRead(ctx, d, m)
 }
 

@@ -17,6 +17,11 @@ resource "oncall_team" "t" {
   ]
 }
 
+resource "oncall_team" "systems" {
+  name   = "Systems"
+  admins = []
+}
+
 resource "oncall_roster" "t" {
   team = oncall_team.t.name
   name = oncall_team.t.name
