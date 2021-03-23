@@ -151,7 +151,16 @@ func resourceAdvancedScheduleRead(ctx context.Context, d *schema.ResourceData, m
 
 	schedule, err := c.GetRosterSchedule(teamName, rosterName, scheduleName)
 	if err != nil {
-		return diagFromErrf(err, "Getting roster schedule %s/%s/%s", teamName, rosterName, scheduleName)
+		if strings.Contains(err.Error(), "Did not find schedule") {
+			schedule = oncall.Schedule{
+				Role: scheduleName,
+				Scheduler: oncall.ScheduleScheduler{
+					Name: "default",
+				},
+			}
+		} else {
+			return diagFromErrf(err, "Getting roster schedule %s/%s/%s", teamName, rosterName, scheduleName)
+		}
 	}
 
 	d.Set(scheduleFieldRole, schedule.Role)
@@ -212,7 +221,9 @@ func resourceAdvancedScheduleDelete(ctx context.Context, d *schema.ResourceData,
 	traceLog("Going to delete roster schedule %s/%s/%s", teamName, rosterName, scheduleName)
 	err = c.RemoveRosterSchedule(teamName, rosterName, scheduleName)
 	if err != nil {
-		return diagFromErrf(err, "Removing roster %s/%s/%s", teamName, rosterName, scheduleName)
+		if !strings.Contains(err.Error(), "Did not find schedule") {
+			return diagFromErrf(err, "Removing roster %s/%s/%s", teamName, rosterName, scheduleName)
+		}
 	}
 
 	// d.SetId("") is automatically called assuming delete returns no errors, but
