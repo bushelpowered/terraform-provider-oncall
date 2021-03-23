@@ -1,9 +1,9 @@
 TEST?=$$(go list ./... | grep -v 'vendor')
-HOSTNAME ?= github.com
+HOSTNAME ?= registry.terraform.io
 NAMESPACE ?= bushelpowered
 NAME ?= oncall
 BINARY = terraform-provider-${NAME}
-VERSION ?= 0.1.7
+VERSION ?= 0.1.10
 OS_ARCH ?= darwin_amd64
 
 default: install
