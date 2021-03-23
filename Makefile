@@ -3,7 +3,7 @@ HOSTNAME ?= github.com
 NAMESPACE ?= bushelpowered
 NAME ?= oncall
 BINARY = terraform-provider-${NAME}
-VERSION ?= 0.2
+VERSION ?= 0.1.7
 OS_ARCH ?= darwin_amd64
 
 default: install
