@@ -3,7 +3,7 @@ HOSTNAME ?= registry.terraform.io
 NAMESPACE ?= bushelpowered
 NAME ?= oncall
 BINARY = terraform-provider-${NAME}
-VERSION ?= 0.1.10
+VERSION ?= 0.1.11
 OS_ARCH ?= darwin_amd64
 
 default: install

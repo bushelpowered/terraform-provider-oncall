@@ -95,7 +95,7 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData) (interface{}
 		Username:   username,
 		Password:   password,
 		AuthMethod: authMethod,
-	})
+	}, &DefaultLogger{})
 	if err != nil {
 		return nil, diag.FromErr(errors.Wrap(err, "Initializing oncall client"))
 	}

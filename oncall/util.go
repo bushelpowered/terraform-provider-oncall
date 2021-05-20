@@ -3,20 +3,15 @@ package oncall
 import (
 	"fmt"
 	"log"
+	"os"
 	"strings"
 
+	"github.com/bushelpowered/oncall-client-go/oncall"
 	"github.com/hashicorp/go-cty/cty"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/pkg/errors"
 )
-
-func leveledLog(level string) func(format string, v ...interface{}) {
-	prefix := fmt.Sprintf("[%s] ", strings.ToUpper(level))
-	return func(format string, v ...interface{}) {
-		log.Printf(prefix+format, v...)
-	}
-}
 
 func diagFromErrf(err error, fmtString string, values ...interface{}) diag.Diagnostics {
 	if err == nil {
@@ -62,8 +57,78 @@ func validateStringSliceContains(slice []string) func(interface{}, cty.Path) dia
 	}
 }
 
-var traceLog = leveledLog("trace")
-var debugLog = leveledLog("debug")
-var infoLog = leveledLog("info")
-var warnLog = leveledLog("warn")
-var errorLog = leveledLog("error")
+var traceLog = DefaultLogger{}.Trace
+var debugLog = DefaultLogger{}.Debug
+var infoLog = DefaultLogger{}.Info
+var warnLog = DefaultLogger{}.Warn
+var errorLog = DefaultLogger{}.Error
+
+type DefaultLogger struct {
+	fields map[string]interface{}
+}
+
+func (l DefaultLogger) leveledLog(level string, values ...interface{}) {
+	prefix := fmt.Sprintf("[%s] Oncall Provider: %+v ", strings.ToUpper(level), l.fields)
+	printThis := []interface{}{
+		prefix,
+	}
+	printThis = append(printThis, values)
+	fmt.Fprintln(os.Stderr, printThis...)
+}
+
+func (l DefaultLogger) leveledLogf(level string, format string, values ...interface{}) {
+	prefix := fmt.Sprintf("[%s] Oncall Provider: %+v", strings.ToUpper(level), l.fields)
+	fmt.Fprintf(os.Stderr, prefix+format+"\n", values...)
+}
+
+func (l DefaultLogger) WithField(key string, value interface{}) oncall.LeveledLogger {
+	if l.fields == nil {
+		l.fields = make(map[string]interface{})
+	}
+	l.fields[key] = value
+	return l
+}
+
+func (l DefaultLogger) Trace(a ...interface{}) {
+	l.leveledLog("Trace", a...)
+}
+func (l DefaultLogger) Tracef(format string, values ...interface{}) {
+	l.leveledLogf("Trace", format, values...)
+}
+
+func (l DefaultLogger) Debug(a ...interface{}) {
+	l.leveledLog("Debug", a...)
+}
+func (l DefaultLogger) Debugf(format string, values ...interface{}) {
+	l.leveledLogf("Debug", format, values...)
+}
+
+func (l DefaultLogger) Info(a ...interface{}) {
+	l.leveledLog("Info", a...)
+}
+func (l DefaultLogger) Infof(format string, values ...interface{}) {
+	l.leveledLogf("Info", format, values...)
+}
+
+func (l DefaultLogger) Warn(a ...interface{}) {
+	l.leveledLog("Warn", a...)
+}
+func (l DefaultLogger) Warnf(format string, values ...interface{}) {
+	l.leveledLogf("Warn", format, values...)
+}
+
+func (l DefaultLogger) Error(a ...interface{}) {
+	l.leveledLog("Error", a...)
+}
+func (l DefaultLogger) Errorf(format string, values ...interface{}) {
+	l.leveledLogf("Error", format, values...)
+}
+
+func (l DefaultLogger) Fatal(a ...interface{}) {
+	l.leveledLog("Fatal", a...)
+	log.Fatal("Above error was fatal")
+}
+func (l DefaultLogger) Fatalf(format string, values ...interface{}) {
+	l.leveledLogf("Fatal", format, values...)
+	log.Fatal("Above error was fatal")
+}
